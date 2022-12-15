@@ -1,0 +1,17 @@
+Ajedrez online
+
+- Front 
+  - Tablero
+  - Piezas
+  - Logica de movimientos
+    - Legales
+    - Ilegales
+  - Maquina de estados 
+  - Ally
+    - Jugadas con teclado
+    - Voz con jugadas
+
+- Back
+  - Setup Sockets
+  - Salas
+  - Deploy
