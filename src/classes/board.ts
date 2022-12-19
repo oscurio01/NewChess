@@ -1,4 +1,3 @@
-import Piece from './Piece';
 import {Theme} from '../types';
 import Cell from './Cell';
 class Board{
@@ -13,9 +12,12 @@ class Board{
     cellHeight: number;
     pieceOffset: number;
 
-    selectedCellPosition: [number, number];
+    previousCell: Cell;
+    selectedCells:Cell[];
 
     boardMatrix: Cell[][];
+
+    flip:boolean;
 
     $canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -29,12 +31,15 @@ class Board{
         this.theme = theme;
         this.pieceTheme = pieceTheme;
 
+        this.flip = false;
+
         this.cellWidth = this.width / this.files;
         this.cellHeight = this.height / this.ranks;
 
         this.pieceOffset = this.cellHeight * 0.1;
 
-        this.selectedCellPosition = [null, null];
+        this.previousCell = null;
+        this.selectedCells = [];
 
         this.$canvas = document.createElement('canvas');
         this.ctx = this.$canvas.getContext('2d');
@@ -62,23 +67,87 @@ class Board{
         // Bind Methods
         this.setSelectedCell = this.setSelectedCell.bind(this);
         this.setMouseCell = this.setMouseCell.bind(this);
+        this.pickPiece = this.pickPiece.bind(this);
+        this.dropPiece = this.dropPiece.bind(this);
 
         // Mouse Events
-        this.$canvas.addEventListener("mousedown", this.setSelectedCell);
+        this.$canvas.addEventListener("mousedown", this.pickPiece);
 
-        this.$canvas.addEventListener("mouseup", ()=>{
-            console.log("Drop");
-            console.clear();
-        });
+        this.$canvas.addEventListener("mouseup", this.dropPiece);
+        //console.clear();
 
-        this.$canvas.addEventListener("mousemove", this.setMouseCell);
+        //this.$canvas.addEventListener("mousemove", );
 
     }
 
     mouseToCell(x: number, y: number){
-        const files = Math.floor(x/this.cellWidth);
-        const ranks = Math.floor(y / this.cellHeight);
-        return [files, ranks];
+        let file = Math.floor(x/this.cellWidth);
+        let rank = Math.floor(y / this.cellHeight);
+        if(this.flip){
+            file = this.files - 1 - file;
+            rank = this.ranks - 1 - rank;
+        }
+        return [file, rank];
+    }
+
+    clearSelections(){
+        this.selectedCells.forEach(c => c.setSelected(false));
+        this.selectedCells = [];
+    }
+
+    clearAvailableMoves(){
+        this.boardMatrix.forEach((file) => {
+            file.forEach((cell) => {
+                cell.setAvailableMovement(false);
+            });
+        });
+    }
+
+    pickPiece(event:MouseEvent){
+        this.clearSelections();
+        if(this.previousCell) return;
+
+        const {offsetX, offsetY} = event;
+        const [file, rank] = this.mouseToCell(offsetX, offsetY);
+        const cell = this.boardMatrix[file][rank];
+
+        if(!cell.piece) return;
+
+        cell.piece.availableMovements([file,rank], this.boardMatrix);
+
+        this.previousCell = cell;
+        this.selectedCells.push(cell);
+        cell.setSelected(true);
+        this.render();
+    }
+
+    dropPiece(event:MouseEvent){
+        if(!this.previousCell) return;
+
+        const {offsetX, offsetY} = event;
+        const [file, rank] = this.mouseToCell(offsetX, offsetY);
+        const cell = this.boardMatrix[file][rank];
+        
+        if(!cell.availableMove || cell == this.previousCell)
+        { 
+            this.previousCell = null;
+            this.clearSelections();
+            this.clearAvailableMoves();
+            this.render();
+            return;
+        }
+        //console.log({drop: this.previousCell.piece});
+        
+        cell.setPiece(this.previousCell.piece);
+        cell.setSelected(true);
+        this.selectedCells.push(cell);
+
+        this.previousCell.setPiece(null);
+        this.previousCell = null;
+
+        //this.flip = !this.flip;
+        this.clearAvailableMoves();
+        this.render();
     }
 
     setSelectedCell(event:MouseEvent){
@@ -113,8 +182,17 @@ class Board{
 
         for (let x = 0; x < this.files; x++) {
             for (let y = 0; y < this.ranks; y++) {
-    
-                if((x + y) % 2){
+                
+                let drawX = x;
+                let drawY = y;
+
+                if(this.flip){
+                    drawX = this.ranks - 1 - drawX;
+                    drawY = this.ranks - 1 - drawY;
+                }
+
+
+                if((drawX + drawY) % 2){
                     rectColor = colorLight;
                     textColor = colorDark;
                 }else{
@@ -123,23 +201,38 @@ class Board{
                 }
             
                 this.ctx.fillStyle = rectColor;
-                this.ctx.fillRect(x * this.cellWidth, y * this.cellHeight, this.cellWidth, this.cellHeight);
+                this.ctx.fillRect(drawX * this.cellWidth, drawY * this.cellHeight, this.cellWidth, this.cellHeight);
         
                 this.ctx.fillStyle = textColor;
         
                 this.ctx.textBaseline = 'top';
                 this.ctx.textAlign = 'start';
                 this.ctx.font = '8px Arial';
-                this.ctx.fillText(`[${x},${y}]`,x * this.cellWidth + 10, y * this.cellHeight + 10);
+                this.ctx.fillText(`[${drawX},${drawY}]`,drawX * this.cellWidth + 10, drawY * this.cellHeight + 10);
         
                 // Draw the piece
                 const cell = this.boardMatrix[x][y];
 
                 if(cell.selected){
-                    this.ctx.strokeStyle = '#ffff00';
+                    this.ctx.fillStyle = '#ffff00';
                     this.ctx.lineWidth = 8;
                     this.ctx.lineJoin = 'bevel';
-                    this.ctx.strokeRect(x * this.cellWidth, y * this.cellHeight, this.cellWidth, this.cellHeight);
+                    this.ctx.fillRect(drawX * this.cellWidth, drawY * this.cellHeight, this.cellWidth, this.cellHeight);
+                }
+
+                if(cell.availableMove ){
+                    this.ctx.fillStyle = '#000000';
+                    this.ctx.globalAlpha = 0.3;
+                    this.ctx.beginPath();
+                    this.ctx.arc(
+                        drawX * this.cellWidth + this.cellWidth/2, 
+                        drawY * this.cellHeight + this.cellHeight/2, 
+                        16, 
+                        0, 
+                        2 * Math.PI
+                    );
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
                 }
 
                 const piece = cell?.piece;
@@ -148,15 +241,15 @@ class Board{
                 this.ctx.textBaseline = 'middle';
                 this.ctx.textAlign = 'center';
                 this.ctx.font = '72px Arial';
-                this.ctx.fillStyle = piece.color;
-                this.ctx.fillText(piece.type[0],
-                    x * this.cellWidth + this.cellWidth / 2, 
-                    y * this.cellHeight + this.cellHeight /2 + this.pieceOffset
+                this.ctx.fillStyle = this.pieceTheme[piece.color];
+                this.ctx.fillText(piece.render[0],
+                    drawX * this.cellWidth + this.cellWidth / 2, 
+                    drawY * this.cellHeight + this.cellHeight /2 + this.pieceOffset
                 );
                     this.ctx.fillStyle = this.pieceTheme.dark;
-                this.ctx.fillText(piece.type[1],
-                    x * this.cellWidth + this.cellWidth / 2, 
-                    y * this.cellHeight + this.cellHeight /2 + this.pieceOffset
+                this.ctx.fillText(piece.render[1],
+                    drawX * this.cellWidth + this.cellWidth / 2, 
+                    drawY * this.cellHeight + this.cellHeight /2 + this.pieceOffset
                 );
             }
         }
