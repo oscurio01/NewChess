@@ -37,7 +37,7 @@ class Piece{
                     if(!this.isEmpty(cell) && cell.piece.color == this.color) break;
 
                     cell.setAvailableMovement(true);
-                    
+                    if(!this.isEmpty(cell)) break;
                     nextX += deltaX;
                     nextY += deltaY;
 
