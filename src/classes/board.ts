@@ -1,5 +1,6 @@
 import {Theme} from '../types';
 import Cell from './Cell';
+import Piece from './Piece';
 class Board{
     width: number;
     height: number;
@@ -127,7 +128,7 @@ class Board{
         const {offsetX, offsetY} = event;
         const [file, rank] = this.mouseToCell(offsetX, offsetY);
         const cell = this.boardMatrix[file][rank];
-        
+
         if(!cell.availableMove || cell == this.previousCell)
         { 
             this.previousCell = null;
@@ -141,7 +142,8 @@ class Board{
         cell.setPiece(this.previousCell.piece);
         cell.setSelected(true);
         this.selectedCells.push(cell);
-
+        
+        this.previousCell.piece.moved = true;
         this.previousCell.setPiece(null);
         this.previousCell = null;
 
@@ -199,25 +201,18 @@ class Board{
                     rectColor = colorDark;
                     textColor = colorLight;
                 }
-            
+                // Draw Cell
                 this.ctx.fillStyle = rectColor;
                 this.ctx.fillRect(drawX * this.cellWidth, drawY * this.cellHeight, this.cellWidth, this.cellHeight);
-        
-                this.ctx.fillStyle = textColor;
-        
-                this.ctx.textBaseline = 'top';
-                this.ctx.textAlign = 'start';
-                this.ctx.font = '8px Arial';
-                this.ctx.fillText(`[${drawX},${drawY}]`,drawX * this.cellWidth + 10, drawY * this.cellHeight + 10);
-        
+  
                 // Draw the piece
                 const cell = this.boardMatrix[x][y];
 
                 if(cell.selected){
                     this.ctx.fillStyle = '#ffff00';
-                    this.ctx.lineWidth = 8;
-                    this.ctx.lineJoin = 'bevel';
+                    this.ctx.globalAlpha = 0.7;
                     this.ctx.fillRect(drawX * this.cellWidth, drawY * this.cellHeight, this.cellWidth, this.cellHeight);
+                    this.ctx.globalAlpha = 1;
                 }
 
                 if(cell.availableMove ){
@@ -234,6 +229,13 @@ class Board{
                     this.ctx.fill();
                     this.ctx.globalAlpha = 1;
                 }
+
+                // Draw Debug position
+                this.ctx.fillStyle = textColor;
+                this.ctx.textBaseline = 'top';
+                this.ctx.textAlign = 'start';
+                this.ctx.font = '8px Arial';
+                this.ctx.fillText(`[${drawX},${drawY}]`,drawX * this.cellWidth + 10, drawY * this.cellHeight + 10);                
 
                 const piece = cell?.piece;
                 

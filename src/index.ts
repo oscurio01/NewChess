@@ -43,11 +43,11 @@ for (let i = 0; i < 2; i++) {
     board.initPlacePiece(0, (i * 7), new Rook(colortmp));
     board.initPlacePiece(7, (i * 7), new Rook(colortmp));
     //
-    board.initPlacePiece(1, (i * 7), new Bishop(colortmp));
-    board.initPlacePiece(6, (i * 7), new Bishop(colortmp));
+    board.initPlacePiece(1, (i * 7), new Knight(colortmp));
+    board.initPlacePiece(6, (i * 7), new Knight(colortmp));
     //
-    board.initPlacePiece(2, (i * 7), new Knight(colortmp));
-    board.initPlacePiece(5, (i * 7), new Knight(colortmp));
+    board.initPlacePiece(2, (i * 7), new Bishop(colortmp));
+    board.initPlacePiece(5, (i * 7), new Bishop(colortmp));
     //
     board.initPlacePiece(4, (i * 7), new Queen(colortmp));
     board.initPlacePiece(3, (i * 7), new King(colortmp));
