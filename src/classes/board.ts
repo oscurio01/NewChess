@@ -1,6 +1,7 @@
-import {Theme} from '../types';
+import {PieceType, Theme} from '../types';
 import Cell from './Cell';
 import Piece from './Piece';
+import King from './Pieces/King';
 class Board{
     width: number;
     height: number;
@@ -67,7 +68,6 @@ class Board{
 
         // Bind Methods
         this.setSelectedCell = this.setSelectedCell.bind(this);
-        this.setMouseCell = this.setMouseCell.bind(this);
         this.pickPiece = this.pickPiece.bind(this);
         this.dropPiece = this.dropPiece.bind(this);
 
@@ -106,6 +106,7 @@ class Board{
 
     pickPiece(event:MouseEvent){
         this.clearSelections();
+        this.clearAvailableMoves();
         if(this.previousCell) return;
 
         const {offsetX, offsetY} = event;
@@ -133,13 +134,22 @@ class Board{
         { 
             this.previousCell = null;
             this.clearSelections();
-            this.clearAvailableMoves();
+            //this.clearAvailableMoves();
             this.render();
             return;
         }
         //console.log({drop: this.previousCell.piece});
         
+        if(this.previousCell.piece.type == PieceType.isKing){
+            const kingPiece = this.previousCell.piece as King;
+            if(!kingPiece.moved
+                || kingPiece.isCastling([file, rank])){
+                    kingPiece.Castle([file, rank], this.boardMatrix);
+                }
+        }
+        
         cell.setPiece(this.previousCell.piece);
+
         cell.setSelected(true);
         this.selectedCells.push(cell);
         
@@ -158,15 +168,6 @@ class Board{
         const cell = this.boardMatrix[file][rank];
         cell.setSelected(true);
         this.render();
-    }
-
-    private setMouseCell(event: MouseEvent){
-        const {offsetX, offsetY} = event;
-        let x, y;
-
-        x = Math.floor(offsetX/this.cellWidth);
-        y = Math.floor(offsetY / this.cellHeight);
-
     }
 
     initPlacePiece(x, y, piece){
