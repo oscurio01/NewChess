@@ -18,7 +18,7 @@ interface Socket extends SocketBase{
 
 interface Room{
   board: (string | null)[][];
-  current?: Socket;
+  current?: number;
   players: Socket[];
 }
 
@@ -45,17 +45,32 @@ io.on('connection', (socket: Socket) => {
     if(!rooms[roomId]){
       rooms[roomId] = {
         board:JSON.parse(JSON.stringify(initialBoard)),
-        current: undefined,
+        current: 0,
         players: [],
       };
     }
     
     console.log({roomId});
 
+    
     rooms[roomId].players.push(socket); 
     socket.join(roomId);
-
+    
     socket.emit('init board', rooms[roomId].board);
+    
+    if(rooms[roomId].players.length == 2){
+      const { players } = rooms[roomId];
+
+      if(Math.random() > 0.5){
+        rooms[roomId].current = 1;
+        players[1].emit('u turn');
+        players[0].emit('enemy turn');
+      }else{
+        players[0].emit('u turn');
+        players[1].emit('enemy turn');
+      }
+
+    }
   });
 
   //socket.emit('init board', initialBoard);
@@ -75,6 +90,10 @@ io.on('connection', (socket: Socket) => {
     room.board[yPrev][xPrev] = null;
 
     io.to(roomId).emit('move', [prev, next]);
+
+    room.current = room.current ? 0 : 1;
+
+    room.players[room.current].emit('u turn');
   });
 
   socket.on('disconnecting', ()=>{

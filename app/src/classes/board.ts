@@ -1,4 +1,4 @@
-import {PieceType, Theme} from '../types';
+import {Color, PieceType, Theme} from '../types';
 import Cell from './Cell';
 import King from './Pieces/King';
 
@@ -22,6 +22,7 @@ class Board{
 
     boardMatrix: Cell[][];
 
+    disabled: boolean;
     flip:boolean;
 
     $canvas: HTMLCanvasElement;
@@ -36,6 +37,7 @@ class Board{
         this.theme = theme;
         this.pieceTheme = pieceTheme;
 
+        this.disabled = true;
         this.flip = false;
 
         this.cellWidth = this.width / this.files;
@@ -75,6 +77,8 @@ class Board{
         this.pickPiece = this.pickPiece.bind(this);
         this.dropPiece = this.dropPiece.bind(this);
         this.onSocketMove = this.onSocketMove.bind(this);
+        this.onSocketTurn = this.onSocketTurn.bind(this);
+        this.onSocketBlack = this.onSocketBlack.bind(this);
 
         // Mouse Events
         this.$canvas.addEventListener("mousedown", this.pickPiece);
@@ -83,6 +87,8 @@ class Board{
         //console.clear();
         // Socket Events
         socket.on('move', this.onSocketMove);
+        socket.on('u turn', this.onSocketTurn);
+        socket.on('enemy turn', this.onSocketBlack);
 
 
     }
@@ -105,9 +111,20 @@ class Board{
         previousCell.setPiece(null);
         this.previousCell = null;
 
+        this.disabled = true;
         //this.flip = !this.flip;
         this.clearAvailableMoves();
 
+        this.render();
+    }
+
+    onSocketTurn(){
+        this.disabled = false;
+        //this.render();
+    }
+
+    onSocketBlack(){
+        this.flip = true;
         this.render();
     }
 
@@ -135,6 +152,7 @@ class Board{
     }
 
     pickPiece(event:MouseEvent){
+        if(this.disabled) return;
         this.clearSelections();
         this.clearAvailableMoves();
         if(this.previousCell) return;
@@ -144,6 +162,8 @@ class Board{
         const cell = this.boardMatrix[file][rank];
 
         if(!cell.piece) return;
+        if((this.flip && cell.piece.color == Color.light)||
+         (!this.flip && cell.piece.color == Color.dark)) return;
 
         cell.piece.availableMovements([file,rank], this.boardMatrix);
 
@@ -168,6 +188,14 @@ class Board{
             //this.clearAvailableMoves();
             this.render();
             return;
+        }
+        
+        if(this.previousCell.piece.type == PieceType.isKing){
+            const kingPiece = this.previousCell.piece as King;
+            if(!kingPiece.moved
+                || kingPiece.isCastling([file, rank])){
+                    kingPiece.Castle([file, rank], this.boardMatrix);
+                }
         }
         //console.log({drop: this.previousCell.piece});
         
