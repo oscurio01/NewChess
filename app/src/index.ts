@@ -34,6 +34,7 @@ const board = new Board(WIDTH, HEIGHT, FILES, RANKS, theme, pieceTheme);
 
 socket.on('init board', (serverPieces) =>{
     //console.log("bobo " + serverPieces);
+    board.render();
     serverPieces.forEach((rank, y) =>{
         rank.forEach((p, x) =>{
             if(!p) return;

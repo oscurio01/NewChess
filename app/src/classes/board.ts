@@ -1,6 +1,5 @@
 import {PieceType, Theme} from '../types';
 import Cell from './Cell';
-import Piece from './Piece';
 import King from './Pieces/King';
 
 import socket from '../helpers/socket';
