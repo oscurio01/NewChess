@@ -4,6 +4,7 @@ import King from './Pieces/King';
 
 import socket from '../helpers/socket';
 
+// Why do you still exist Again
 class Board{
     width: number;
     height: number;

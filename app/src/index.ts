@@ -1,4 +1,4 @@
-import Board from './classes/Board';
+import Board from './classes/board';
 import Piece from './classes/Piece';
 import Bishop from './classes/Pieces/Bishop';
 import King from './classes/Pieces/King';
